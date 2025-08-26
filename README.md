@@ -14,10 +14,6 @@ What is a CALC strategy?
 ```ts
 import { strategy, actions, conditions } from "@calc_fi/strategy-builder";
 
-// Required ENV vars
-process.env.CALC_MANAGER_ADDRESS = "thor1...mgr";
-process.env.CALC_SCHEDULER_ADDRESS = "thor1...schdlr";
-
 strategy("DCA RUNE→USDC")
   .when(
     conditions.schedule({
