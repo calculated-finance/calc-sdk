@@ -14,16 +14,12 @@ type Config = {
   schedulerAddress: string;
 };
 
-export type StrategyActionNode = Omit<ActionNode, "action"> & {
-  action: {
-    action: Action;
-  };
+export type StrategyActionNode = {
+  action: ActionNode;
 };
 
-export type StrategyConditionNode = Omit<ConditionNode, "condition"> & {
-  condition: {
-    condition: Condition;
-  };
+export type StrategyConditionNode = {
+  condition: ConditionNode;
 };
 
 export type StrategyNode = StrategyActionNode | StrategyConditionNode;
@@ -52,15 +48,7 @@ export class StrategyBuilder {
     const builder = new StrategyBuilder(strategy.label, strategy.source);
 
     builder.nodes = strategy.nodes.map((n) =>
-      "action" in n
-        ? {
-            ...n,
-            ...n.action,
-          }
-        : {
-            ...n,
-            ...n.condition,
-          }
+      "action" in n ? n.action : n.condition
     );
 
     builder.owner = strategy.owner;
@@ -320,36 +308,23 @@ export class StrategyBuilder {
     return {
       nodes: this.nodes.map((node, index) => {
         if ("action" in node) {
-          const action = { ...node.action };
-
-          if ("manager_address" in action) {
-            action.manager_address = managerAddress;
-          }
-
-          if ("scheduler_address" in action) {
-            action.scheduler_address = schedulerAddress;
-          }
-
           return {
-            ...node,
-            action: { action },
-            index,
+            action: { ...node, index },
           };
         } else {
           const condition = { ...node.condition };
 
-          if ("manager_address" in condition) {
-            condition.manager_address = managerAddress;
-          }
-
-          if ("scheduler_address" in condition) {
-            condition.scheduler_address = schedulerAddress;
+          if ("schedule" in condition) {
+            condition.schedule.manager_address = managerAddress;
+            condition.schedule.scheduler_address = schedulerAddress;
           }
 
           return {
-            ...node,
-            condition: { condition },
-            index,
+            condition: {
+              ...node,
+              condition,
+              index,
+            },
           };
         }
       }),

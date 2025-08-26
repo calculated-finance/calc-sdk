@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { actions } from "../src/actions";
 import { conditions } from "../src/conditions";
-import { Config, Environment } from "../src/fixtures";
 import {
   strategy,
   StrategyActionNode,
@@ -14,10 +13,13 @@ const C = (
   condition: any,
   on_success?: number,
   on_failure?: number
-) => ({ index, condition, on_success, on_failure } as const);
+): StrategyConditionNode => ({
+  condition: { index, condition, on_success, on_failure },
+});
 
-const A = (index: number, action: any, next?: number) =>
-  ({ index, action, next } as const);
+const A = (index: number, action: any, next?: number): StrategyActionNode => ({
+  action: { index, action, next },
+});
 
 describe("StrategyBuilder", () => {
   test("valid linear: condition -> action -> action", () => {
@@ -112,10 +114,7 @@ describe("StrategyBuilder", () => {
           destinations: [],
         })
       )
-      .build({
-        managerAddress: "mgr",
-        schedulerAddress: "sch",
-      });
+      .build();
 
     expect(s.nodes.length).toBe(3);
 
@@ -128,9 +127,9 @@ describe("StrategyBuilder", () => {
     expect("condition" in c).toBe(true);
     expect("action" in a1).toBe(true);
     expect("action" in a2).toBe(true);
-    expect(c.on_success).toBe(1);
-    expect(a1.next).toBe(2);
-    expect(a2.next).toBeUndefined();
+    expect(c.condition.on_success).toBe(1);
+    expect(a1.action.next).toBe(2);
+    expect(a2.action.next).toBeUndefined();
   });
 
   test("if -> then/else branches", () => {
@@ -138,7 +137,7 @@ describe("StrategyBuilder", () => {
       .if(conditions.blocksCompleted(10))
       .then(actions.distribute({ denoms: [], destinations: [] }))
       .else(actions.distribute({ denoms: [], destinations: [] }))
-      .build(Config[Environment.THORCHAIN_MAINNET]);
+      .build();
 
     const [cond, onSuccess, onFailure] = s.nodes as [
       StrategyConditionNode,
@@ -146,10 +145,10 @@ describe("StrategyBuilder", () => {
       StrategyActionNode
     ];
 
-    expect(cond.on_success).toBe(1);
-    expect(cond.on_failure).toBe(2);
-    expect(onSuccess.next).toBeUndefined();
-    expect(onFailure.next).toBeUndefined();
+    expect(cond.condition.on_success).toBe(1);
+    expect(cond.condition.on_failure).toBe(2);
+    expect(onSuccess.action.next).toBeUndefined();
+    expect(onFailure.action.next).toBeUndefined();
   });
 
   test("then without a prior condition throws", () => {
