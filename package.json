@@ -1,6 +1,6 @@
 {
   "name": "@calc_fi/strategy-builder",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Type-safe strategy builder for CALC",
   "license": "MIT",
   "type": "module",
@@ -12,7 +12,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./calc": "./dist/calc.d.ts"
+    "./calc": {
+      "types": "./dist/calc.d.ts"
+    }
   },
   "files": [
     "dist",
@@ -22,9 +24,10 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "postbuild": "cp calc.d.ts dist/calc.d.ts",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prepublishOnly": "npm pkg fix && bun run typecheck && bun test && bun run build"
+    "prepublish": "npm pkg fix && bun run typecheck && bun test && bun run build && bun run postbuild"
   },
   "publishConfig": {
     "access": "public",
