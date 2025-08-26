@@ -25,5 +25,7 @@
     "resolveJsonModule": true,
     "noEmitOnError": true,
     "newLine": "lf"
-  }
+  },
+  "include": ["index.ts", "src/**/*.ts", "calc.d.ts"],
+  "exclude": ["dist", "tests", "**/*.test.ts"]
 }
