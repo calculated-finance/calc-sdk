@@ -1,6 +1,13 @@
 import type { Action, Condition } from "../calc";
 import { Config, Environment } from "./fixtures";
-import { isAction, isCondition, isSchedule, type Node } from "./types";
+import {
+  isAction,
+  isCondition,
+  isSchedule,
+  type ActionNode,
+  type ConditionNode,
+  type Node,
+} from "./types";
 
 type Config = {
   managerAddress: string;
@@ -48,9 +55,9 @@ export class StrategyBuilder {
     }
 
     if (this.currentIndex !== null) {
-      this.addEdge(this.currentIndex, this.addNode(condition));
+      this.addEdge(this.currentIndex, this.addNode({ condition }));
     } else {
-      this.addNode(condition);
+      this.addNode({ condition });
     }
 
     return this;
@@ -68,49 +75,68 @@ export class StrategyBuilder {
     }
 
     if (this.currentIndex !== null) {
-      this.addEdge(this.currentIndex, this.addNode(condition));
+      this.addEdge(this.currentIndex, this.addNode({ condition }));
     } else {
-      this.addNode(condition);
+      this.addNode({ condition });
     }
 
     return this;
   }
 
-  then(step: Action | Condition): this {
+  then(payload: Action | Condition): this {
     if (this.currentIndex === null) {
       throw new Error(
         "then(...) cannot be the first step. Call when(...) or if(...) first."
       );
     }
 
-    if (!isAction(step) && !isCondition(step)) {
+    const isActionNode = isAction(payload);
+    const isConditionNode = isCondition(payload);
+
+    if (!isActionNode && !isConditionNode) {
       throw new Error("then(...) requires an action or a condition");
     }
 
-    this.addEdge(this.currentIndex, this.addNode(step));
+    this.addEdge(
+      this.currentIndex,
+      this.addNode(isActionNode ? { action: payload } : { condition: payload })
+    );
+
     return this;
   }
 
-  else(step: Action | Condition): this {
+  else(payload: Action | Condition): this {
     if (this.previousConditionIndex === null) {
       throw new Error(
-        "else(...) must follow a condition (when/if/then with a condition)."
+        "else(...) must follow a condition added via when/if/then."
       );
     }
 
-    this.addEdge(this.previousConditionIndex, this.addNode(step), true);
+    const isActionNode = isAction(payload);
+    const isConditionNode = isCondition(payload);
+
+    if (!isActionNode && !isConditionNode) {
+      throw new Error("then(...) requires an action or a condition");
+    }
+
+    this.addEdge(
+      this.previousConditionIndex,
+      this.addNode(isActionNode ? { action: payload } : { condition: payload }),
+      true
+    );
+
     return this;
   }
 
-  update(index: number, step: Action | Condition): this {
+  update(index: number, payload: Action | Condition): this {
     const node = this.nodes[index];
 
     if (!node) {
       throw new Error(`update(${index}) failed: node does not exist`);
     }
 
-    const stepIsAction = isAction(step);
-    const stepIsCondition = isCondition(step);
+    const stepIsAction = isAction(payload);
+    const stepIsCondition = isCondition(payload);
 
     if (!stepIsAction && !stepIsCondition) {
       throw new Error("update(...) requires an Action or Condition payload");
@@ -123,7 +149,7 @@ export class StrategyBuilder {
         );
       }
 
-      node.action = step;
+      node.action = payload;
       return this;
     }
 
@@ -133,7 +159,7 @@ export class StrategyBuilder {
       );
     }
 
-    node.condition = step;
+    node.condition = payload;
     return this;
   }
 
@@ -142,16 +168,15 @@ export class StrategyBuilder {
     return this;
   }
 
-  addNode(data: Action | Condition): number {
+  addNode(
+    node: Pick<ActionNode, "action"> | Pick<ConditionNode, "condition">
+  ): number {
     const index = this.nodes.length;
-
-    this.nodes.push(
-      isAction(data) ? { index, action: data } : { index, condition: data }
-    );
+    this.nodes.push({ ...node, index });
 
     this.currentIndex = index;
 
-    if (isCondition(data)) {
+    if ("condition" in node && isCondition(node.condition)) {
       this.previousConditionIndex = index;
     }
 
@@ -211,7 +236,11 @@ export class StrategyBuilder {
 
     if (entries.length === 0) {
       throw new Error(
-        "Graph has no entry node (every node has an incoming edge) — likely a cycle."
+        `Graph has no entry node (every node has an incoming edge) — likely a cycle. Graph: ${JSON.stringify(
+          this.nodes,
+          null,
+          2
+        )}`
       );
     }
 
@@ -219,7 +248,11 @@ export class StrategyBuilder {
       throw new Error(
         `Graph must be a single connected component with exactly one entry node; found ${
           entries.length
-        } entries at indices [${entries.join(", ")}].`
+        } entries at indices [${entries.join(", ")}]. Graph: ${JSON.stringify(
+          this.nodes,
+          null,
+          2
+        )}`
       );
     }
 
@@ -246,7 +279,9 @@ export class StrategyBuilder {
       throw new Error(
         `Graph contains a cycle or unreachable nodes from entry ${
           entries[0]
-        }; unprocessed node indices: [${remaining.join(", ")}].`
+        }; unprocessed node indices: [${remaining.join(
+          ", "
+        )}]. Graph: ${JSON.stringify(this.nodes, null, 2)}`
       );
     }
   }

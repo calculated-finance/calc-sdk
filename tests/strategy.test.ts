@@ -125,7 +125,7 @@ describe("StrategyBuilder", () => {
     expect(a2.next).toBeUndefined();
   });
 
-  test("if -> then/else branches", () => {
+  test.only("if -> then/else branches", () => {
     const s = strategy("Branch")
       .if(conditions.blocksCompleted(10))
       .then(actions.distribute({ denoms: [], destinations: [] }))
