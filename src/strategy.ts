@@ -1,5 +1,11 @@
 import type { Action, Condition } from "../calc";
+import { Config, Environment } from "./fixtures";
 import { isAction, isCondition, isSchedule, type Node } from "./types";
+
+type Config = {
+  managerAddress: string;
+  schedulerAddress: string;
+};
 
 type Strategy = {
   nodes: Node[];
@@ -22,17 +28,6 @@ export class StrategyBuilder {
   }
 
   static from(strategy: Strategy) {
-    const manager_address = process.env.CALC_MANAGER_ADDRESS;
-    const scheduler_address = process.env.CALC_SCHEDULER_ADDRESS;
-
-    if (!manager_address || !scheduler_address) {
-      throw new Error(
-        `CALC StrategyBuilder requires the following environment vars to be set:
-          - CALC_MANAGER_ADDRESS
-          - CALC_SCHEDULER_ADDRESS`
-      );
-    }
-
     const builder = new StrategyBuilder(strategy.label, strategy.source);
 
     builder.nodes = strategy.nodes;
@@ -42,11 +37,7 @@ export class StrategyBuilder {
   }
 
   static create(label: string, source?: string) {
-    return StrategyBuilder.from({
-      label,
-      source,
-      nodes: [],
-    });
+    return new StrategyBuilder(label, source);
   }
 
   when(condition: Condition): this {
@@ -260,11 +251,48 @@ export class StrategyBuilder {
     }
   }
 
-  build(): Strategy {
+  build(config?: Config): Strategy {
     this.validate();
 
+    const { managerAddress, schedulerAddress } =
+      config ?? Config[Environment.THORCHAIN_MAINNET];
+
     return {
-      nodes: this.nodes.map((node, index) => ({ ...node, index })),
+      nodes: this.nodes.map((node, index) => {
+        if ("action" in node) {
+          const action = { ...node.action };
+
+          if ("manager_address" in action) {
+            action.manager_address = managerAddress;
+          }
+
+          if ("scheduler_address" in action) {
+            action.scheduler_address = schedulerAddress;
+          }
+
+          return {
+            ...node,
+            action,
+            index,
+          };
+        } else {
+          const condition = { ...node.condition };
+
+          if ("manager_address" in condition) {
+            condition.manager_address = managerAddress;
+          }
+
+          if ("scheduler_address" in condition) {
+            condition.scheduler_address = schedulerAddress;
+          }
+
+          return {
+            ...node,
+            condition,
+            index,
+          };
+        }
+      }),
       label: this.label,
       owner: this.owner,
       source: this.source,

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { actions } from "../src/actions";
 import { conditions } from "../src/conditions";
+import { Config, Environment } from "../src/fixtures";
 import { strategy, StrategyBuilder } from "../src/strategy";
 import type { ActionNode, ConditionNode } from "../src/types";
 
@@ -15,9 +16,6 @@ const A = (index: number, action: any, next?: number) =>
   ({ index, action, next } as const);
 
 describe("StrategyBuilder", () => {
-  process.env.CALC_MANAGER_ADDRESS = "mgr";
-  process.env.CALC_SCHEDULER_ADDRESS = "sch";
-
   test("valid linear: condition -> action -> action", () => {
     expect(() =>
       StrategyBuilder.from({
@@ -110,7 +108,10 @@ describe("StrategyBuilder", () => {
           destinations: [],
         })
       )
-      .build();
+      .build({
+        managerAddress: "mgr",
+        schedulerAddress: "sch",
+      });
 
     expect(s.nodes.length).toBe(3);
 
@@ -129,7 +130,7 @@ describe("StrategyBuilder", () => {
       .if(conditions.blocksCompleted(10))
       .then(actions.distribute({ denoms: [], destinations: [] }))
       .else(actions.distribute({ denoms: [], destinations: [] }))
-      .build();
+      .build(Config[Environment.THORCHAIN_MAINNET]);
 
     const [cond, onSuccess, onFailure] = s.nodes as [
       ConditionNode,
