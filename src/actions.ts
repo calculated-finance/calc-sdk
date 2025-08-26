@@ -12,12 +12,29 @@ import type {
 import { toDecimal18 } from "./serde";
 
 export const actions = {
-  swap(payload: Swap): Action {
-    return { swap: payload };
+  swap(
+    payload: Pick<Swap, "swap_amount" | "minimum_receive_amount" | "routes"> &
+      Partial<Swap>
+  ): Action {
+    return {
+      swap: {
+        maximum_slippage_bps: 200,
+        adjustment: "fixed",
+        ...payload,
+      },
+    };
   },
 
-  limit_order(payload: FinLimitOrder): Action {
-    return { limit_order: payload };
+  limit_order(
+    payload: Pick<
+      FinLimitOrder,
+      "bid_denom" | "pair_address" | "side" | "strategy"
+    > &
+      Partial<FinLimitOrder>
+  ): Action {
+    return {
+      limit_order: payload,
+    };
   },
 
   distribute(payload: Distribution): Action {

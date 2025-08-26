@@ -21,17 +21,34 @@ export class StrategyBuilder {
     this.source = source;
   }
 
-  static create(label: string, source?: string) {
-    return new StrategyBuilder(label, source);
-  }
-
   static from(strategy: Strategy) {
+    const manager_address = process.env.CALC_MANAGER_ADDRESS;
+    const scheduler_address = process.env.CALC_SCHEDULER_ADDRESS;
+
+    if (!manager_address || !scheduler_address) {
+      throw new Error(
+        `
+        CALC StrategyBuilder requires the following environment vars to be set:
+          - CALC_MANAGER_ADDRESS
+          - CALC_SCHEDULER_ADDRESS
+        `
+      );
+    }
+
     const builder = new StrategyBuilder(strategy.label, strategy.source);
 
     builder.nodes = strategy.nodes;
     builder.owner = strategy.owner;
 
     return builder;
+  }
+
+  static create(label: string, source?: string) {
+    return StrategyBuilder.from({
+      label,
+      source,
+      nodes: [],
+    });
   }
 
   when(condition: Condition): this {

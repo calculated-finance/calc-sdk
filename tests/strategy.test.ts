@@ -1,47 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { Distribution, Schedule, Swap } from "../calc";
 import { actions } from "../src/actions";
 import { conditions } from "../src/conditions";
 import { strategy, StrategyBuilder } from "../src/strategy";
 import type { ActionNode, ConditionNode } from "../src/types";
-
-function schedule(data?: Partial<Schedule>) {
-  return conditions.schedule({
-    cadence: { time: { duration: { secs: 3600, nanos: 0 }, previous: null } },
-    execution_rebate: [],
-    executors: [],
-    jitter: null,
-    manager_address: "mgr",
-    next: null,
-    scheduler_address: "sch",
-    ...data,
-  });
-}
-
-function swap(data?: Partial<Swap>) {
-  return actions.swap({
-    swap_amount: { amount: "1000", denom: "uatom" },
-    minimum_receive_amount: { amount: "950", denom: "uusdc" },
-    maximum_slippage_bps: 50,
-    routes: [{ fin: { pair_address: "fin1" } }],
-    adjustment: "fixed" as const,
-    ...data,
-  });
-}
-
-function distribute(data?: Partial<Distribution>) {
-  return actions.distribute({
-    denoms: ["uusdc"],
-    destinations: [
-      {
-        recipient: { bank: { address: "addr1" } },
-        shares: "1000",
-        label: null,
-      },
-    ],
-    ...data,
-  });
-}
 
 const C = (
   index: number,
@@ -54,6 +15,9 @@ const A = (index: number, action: any, next?: number) =>
   ({ index, action, next } as const);
 
 describe("StrategyBuilder", () => {
+  process.env.CALC_MANAGER_ADDRESS = "mgr";
+  process.env.CALC_SCHEDULER_ADDRESS = "sch";
+
   test("valid linear: condition -> action -> action", () => {
     expect(() =>
       StrategyBuilder.from({
@@ -126,9 +90,26 @@ describe("StrategyBuilder", () => {
 
   test("when -> then(action) -> then(action)", () => {
     const s = strategy("DCA")
-      .when(schedule())
-      .then(swap())
-      .then(distribute())
+      .when(conditions.schedule({ cadence: { blocks: { interval: 2131 } } }))
+      .then(
+        actions.swap({
+          swap_amount: {
+            amount: "2321123",
+            denom: "rune",
+          },
+          minimum_receive_amount: {
+            amount: "3278645",
+            denom: "x/ruji",
+          },
+          routes: [{ fin: { pair_address: "thor...pair" } }],
+        })
+      )
+      .then(
+        actions.distribute({
+          denoms: [],
+          destinations: [],
+        })
+      )
       .build();
 
     expect(s.nodes.length).toBe(3);
@@ -146,8 +127,8 @@ describe("StrategyBuilder", () => {
   test("if -> then/else branches", () => {
     const s = strategy("Branch")
       .if(conditions.blocksCompleted(10))
-      .then(distribute())
-      .else(distribute())
+      .then(actions.distribute({ denoms: [], destinations: [] }))
+      .else(actions.distribute({ denoms: [], destinations: [] }))
       .build();
 
     const [cond, onSuccess, onFailure] = s.nodes as [
@@ -163,21 +144,45 @@ describe("StrategyBuilder", () => {
   });
 
   test("then without a prior condition throws", () => {
-    expect(() => strategy("Invalid").then(distribute())).toThrow();
+    expect(() =>
+      strategy("Invalid").then(
+        actions.distribute({
+          denoms: [],
+          destinations: [],
+        })
+      )
+    ).toThrow();
   });
 
   test("else without a prior condition throws", () => {
-    expect(() => strategy("Invalid").else(distribute())).toThrow();
+    expect(() =>
+      strategy("Invalid").else(
+        actions.distribute({
+          denoms: [],
+          destinations: [],
+        })
+      )
+    ).toThrow();
   });
 
   test("if rejects schedule condition", () => {
-    expect(() => strategy("Invalid-if").if(schedule())).toThrow();
+    expect(() =>
+      strategy("Invalid-if").if(
+        conditions.schedule({
+          cadence: { blocks: { interval: 2131 } },
+        })
+      )
+    ).toThrow();
   });
 
   test("then requires action or condition shape", () => {
     expect(() =>
       strategy("Invalid-then")
-        .when(schedule())
+        .when(
+          conditions.schedule({
+            cadence: { blocks: { interval: 2131 } },
+          })
+        )
         .then({ not_a_valid_key: true } as any)
     ).toThrow();
   });
