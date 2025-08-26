@@ -14,6 +14,10 @@ What is a CALC strategy?
 ```ts
 import { strategy, actions, conditions } from "@calc_fi/strategy-builder";
 
+// Required ENV vars
+process.env.CALC_MANAGER_ADDRESS = "thor1...mgr";
+process.env.CALC_SCHEDULER_ADDRESS = "thor1...schdlr";
+
 strategy("DCA RUNE→USDC")
   .when(
     conditions.schedule({
@@ -54,87 +58,145 @@ strategy("DCA RUNE→USDC")
 
 ## Actions (what you can do)
 
-`actions.swap(Swap)`
+### Swap
 
-- Market swap via one or more routes.
-- Key fields: swap_amount, minimum_receive_amount, routes (e.g., { fin: { pair_address } }), optional maximum_slippage_bps, adjustment.
+Market swap via one or more routes (FIN, Thorchain).
 
-  ```ts
-  actions.swap({
-    swap_amount: { amount: "1000000", denom: "uatom" },
-    minimum_receive_amount: { amount: "950000", denom: "uusdc" },
-    routes: [{ fin: { pair_address: "fin1...pair" } }],
-  });
-  ```
+```ts
+actions.swap({
+  swap_amount: { amount: "1000000", denom: "uatom" },
+  minimum_receive_amount: { amount: "950000", denom: "uusdc" },
+  routes: [{ fin: { pair_address: "fin1...pair" } }],
+});
+```
 
-`actions.limit_order(FinLimitOrder)`
+### Limit Orders
 
-- Place/refresh a limit order on FIN at a strategy price.
-- Key fields: pair_address, side ("base" | "quote"), strategy (PriceStrategy), bid_denom, optional bid_amount, min_fill_ratio.
+Place/refresh a limit order on FIN at a either a fixed or dynamic price.
 
-  ```ts
-  actions.limit_order({
-    pair_address: "fin1...pair",
-    side: "base",
-    strategy: { fixed: "10.00" },
-    bid_denom: "uusdc",
-    bid_amount: "10000000",
-  });
-  ```
+```ts
+actions.limit_order({
+  pair_address: "fin1...pair",
+  side: "base",
+  strategy: { fixed: "10.00" },
+  bid_denom: "uusdc",
+  bid_amount: "10000000",
+});
+```
 
-`actions.distribute(Distribution)`
+### Distribute
 
-- Split balances to recipients by shares.
-- Key fields: denoms, destinations[{ recipient, shares, label? }].
-- Example:
-  ```ts
-  actions.distribute({
-    denoms: ["uusdc"],
-    destinations: [
-      { recipient: { bank: { address: "cosmos1..." } }, shares: "10000" },
-    ],
-  });
-  ```
+Distribute funds to multiple recipients.
+
+```ts
+actions.distribute({
+  denoms: ["uusdc"],
+  destinations: [
+    { recipient: { bank: { address: "cosmos1..." } }, shares: "10000" },
+  ],
+});
+```
 
 ## Conditions (if/when to act)
 
-`conditions.schedule(Schedule)`
+### Schedule
 
-- Time/block cadence trigger (entry point for most strategies).
-- Key field: cadence (e.g., { blocks: { interval: 10 } } or { time: { secs: 3600, nanos: 0 }}).
+Repeatedly trigger strategy execution on a time, block, or cron schedule.
 
-`conditions.timestampElapsed(Timestamp)`
+```ts
+conditions.schedule({
+  cadence: { blocks: { interval: 10 } },
+});
+```
 
-- True after a specific timestamp.
-- Example: `{ timestamp_elapsed: "1712345678" }`
+### Timestamp elapsed
 
-`conditions.blocksCompleted(number)`
+True after a specific UNIX timestamp (seconds).
 
-- True after N total blocks have elapsed on the target chain.
+```ts
+conditions.timestampElapsed("1712345678");
+```
 
-`conditions.canSwap(Swap)`
+### Blocks completed
 
-- Feasibility check for a prospective swap.
+True after N blocks.
 
-`conditions.balanceAvailable({ address?, amount })`
+```ts
+conditions.blocksCompleted(100);
+```
 
-- True if an address has at least amount. If address is unspecified, checks the strategy address balance.
+### Can swap
 
-`conditions.strategyStatus({ contract_address, manager_contract, status })`
+Feasibility check for a prospective swap action.
 
-- True if a strategy status matches ("active" | "paused").
+```ts
+conditions.canSwap({
+  swap_amount: { amount: "1000000", denom: "uatom" },
+  minimum_receive_amount: { amount: "950000", denom: "uusdc" },
+  routes: [{ fin: { pair_address: "fin1...pair" } }],
+});
+```
 
-`conditions.oraclePrice({ asset, direction, price })`
+### Balance available
 
-- True if asset price is above/below a threshold.
+True if an address (or the strategy, if omitted) has at least the specified amount.
 
-`conditions.finLimitOrderFilled({ pair_address, side, price, owner? })`
+```ts
+conditions.balanceAvailable({
+  address: "cosmos1...",
+  amount: { amount: "1000000", denom: "uusdc" },
+});
+```
 
-- True if a FIN order at price/side has filled. If owner is unspecified, checks the strategy address orders.
+### Strategy status
 
-`conditions.assetValueRatio({ numerator, denominator, oracle, ratio, tolerance })`
+True if a strategy’s status matches.
 
-- True if an asset ratio is within tolerance.
+```ts
+conditions.strategyStatus({
+  contract_address: "cosmos1strategy...",
+  manager_contract: "cosmos1manager...",
+  status: "active",
+});
+```
+
+### Oracle price
+
+True if an asset price is above/below a threshold.
+
+```ts
+conditions.oraclePrice({
+  asset: "ATOM/USDC",
+  direction: "below",
+  price: "10.00",
+});
+```
+
+### FIN limit order filled
+
+True if a FIN order at price/side has filled (optionally for a specific owner).
+
+```ts
+conditions.finLimitOrderFilled({
+  pair_address: "fin1...pair",
+  side: "base",
+  price: "10.00",
+});
+```
+
+### Asset value ratio
+
+True if an asset ratio is within tolerance from a given oracle.
+
+```ts
+conditions.assetValueRatio({
+  numerator: "ATOM",
+  denominator: "USDC",
+  oracle: "thorchain",
+  ratio: "10.00",
+  tolerance: "0.50",
+});
+```
 
 ## Notes
 
