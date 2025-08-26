@@ -12,15 +12,12 @@ import { toDecimal18 } from "./serde";
 
 export const conditions = {
   schedule(payload: Pick<Schedule, "cadence"> & Partial<Schedule>): Condition {
-    const manager_address = process.env.CALC_MANAGER_ADDRESS!;
-    const scheduler_address = process.env.CALC_SCHEDULER_ADDRESS!;
-
     return {
       schedule: {
         executors: [],
         execution_rebate: [],
-        manager_address,
-        scheduler_address,
+        manager_address: "",
+        scheduler_address: "",
         ...payload,
       },
     };
