@@ -1,16 +1,53 @@
 {
-  "name": "calc-sdk",
-  "module": "index.ts",
+  "name": "@calc/strategy-builder",
+  "version": "0.1.0",
+  "description": "Type-safe strategy builder for CALC",
+  "license": "MIT",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./calc": "./dist/calc.d.ts"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "test": "bun test",
-    "test:cov": "bun test --coverage",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build"
   },
+  "engines": {
+    "node": ">=18",
+    "bun": ">=1.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/calculated-finance/calc-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/calculated-finance/calc-sdk/issues"
+  },
+  "homepage": "https://github.com/calculated-finance/calc-sdk#readme",
+  "keywords": [
+    "calc",
+    "sdk",
+    "strategy",
+    "builder",
+    "cosmwasm",
+    "rujira",
+    "thorchain"
+  ],
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.5.0"
   }
 }

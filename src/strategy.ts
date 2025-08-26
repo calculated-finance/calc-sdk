@@ -27,11 +27,9 @@ export class StrategyBuilder {
 
     if (!manager_address || !scheduler_address) {
       throw new Error(
-        `
-        CALC StrategyBuilder requires the following environment vars to be set:
+        `CALC StrategyBuilder requires the following environment vars to be set:
           - CALC_MANAGER_ADDRESS
-          - CALC_SCHEDULER_ADDRESS
-        `
+          - CALC_SCHEDULER_ADDRESS`
       );
     }
 

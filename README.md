@@ -36,7 +36,6 @@ const s = strategy("DCA ATOM→USDC")
         amount: "3213321",
         denom: "x/ruji",
       },
-      maximum_slippage_bps: 200,
       routes: [
         {
           fin: { pair_address: "thor1...pair" },
