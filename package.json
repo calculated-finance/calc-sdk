@@ -1,6 +1,6 @@
 {
   "name": "@calc_fi/strategy-builder",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Type-safe strategy builder for CALC",
   "license": "MIT",
   "type": "module",

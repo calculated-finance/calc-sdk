@@ -74,6 +74,10 @@ jobs:
         if: steps.ver.outputs.changed == 'true'
         run: bun run build
 
+      - name: Post Build
+        if: steps.ver.outputs.changed == 'true'
+        run: bun run postbuild
+
       - name: Publish to npm
         if: steps.ver.outputs.changed == 'true'
         env:
