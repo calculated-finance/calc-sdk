@@ -14,8 +14,22 @@ type Config = {
   schedulerAddress: string;
 };
 
-type Strategy = {
-  nodes: Node[];
+export type StrategyActionNode = Omit<ActionNode, "action"> & {
+  action: {
+    action: Action;
+  };
+};
+
+export type StrategyConditionNode = Omit<ConditionNode, "condition"> & {
+  condition: {
+    condition: Condition;
+  };
+};
+
+export type StrategyNode = StrategyActionNode | StrategyConditionNode;
+
+export type Strategy = {
+  nodes: StrategyNode[];
   label: string;
   owner?: string;
   source?: string;
@@ -37,7 +51,18 @@ export class StrategyBuilder {
   static from(strategy: Strategy) {
     const builder = new StrategyBuilder(strategy.label, strategy.source);
 
-    builder.nodes = strategy.nodes;
+    builder.nodes = strategy.nodes.map((n) =>
+      "action" in n
+        ? {
+            ...n,
+            ...n.action,
+          }
+        : {
+            ...n,
+            ...n.condition,
+          }
+    );
+
     builder.owner = strategy.owner;
 
     return builder;
@@ -307,7 +332,7 @@ export class StrategyBuilder {
 
           return {
             ...node,
-            action,
+            action: { action },
             index,
           };
         } else {
@@ -323,7 +348,7 @@ export class StrategyBuilder {
 
           return {
             ...node,
-            condition,
+            condition: { condition },
             index,
           };
         }

@@ -2,8 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { actions } from "../src/actions";
 import { conditions } from "../src/conditions";
 import { Config, Environment } from "../src/fixtures";
-import { strategy, StrategyBuilder } from "../src/strategy";
-import type { ActionNode, ConditionNode } from "../src/types";
+import {
+  strategy,
+  StrategyActionNode,
+  StrategyBuilder,
+  StrategyConditionNode,
+} from "../src/strategy";
 
 const C = (
   index: number,
@@ -115,7 +119,11 @@ describe("StrategyBuilder", () => {
 
     expect(s.nodes.length).toBe(3);
 
-    const [c, a1, a2] = s.nodes as [ConditionNode, ActionNode, ActionNode];
+    const [c, a1, a2] = s.nodes as [
+      StrategyConditionNode,
+      StrategyActionNode,
+      StrategyActionNode
+    ];
 
     expect("condition" in c).toBe(true);
     expect("action" in a1).toBe(true);
@@ -125,7 +133,7 @@ describe("StrategyBuilder", () => {
     expect(a2.next).toBeUndefined();
   });
 
-  test.only("if -> then/else branches", () => {
+  test("if -> then/else branches", () => {
     const s = strategy("Branch")
       .if(conditions.blocksCompleted(10))
       .then(actions.distribute({ denoms: [], destinations: [] }))
@@ -133,9 +141,9 @@ describe("StrategyBuilder", () => {
       .build(Config[Environment.THORCHAIN_MAINNET]);
 
     const [cond, onSuccess, onFailure] = s.nodes as [
-      ConditionNode,
-      ActionNode,
-      ActionNode
+      StrategyConditionNode,
+      StrategyActionNode,
+      StrategyActionNode
     ];
 
     expect(cond.on_success).toBe(1);
