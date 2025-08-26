@@ -1,6 +1,6 @@
 {
   "name": "@calc/strategy-builder",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Type-safe strategy builder for CALC",
   "license": "MIT",
   "type": "module",
@@ -24,7 +24,7 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prepublishOnly": "bun run typecheck && bun test && bun run build"
+    "prepublishOnly": "npm pkg fix && bun run typecheck && bun test && bun run build"
   },
   "engines": {
     "node": ">=18",
