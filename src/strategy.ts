@@ -22,21 +22,21 @@ type Config = {
 };
 
 export class StrategyBuilder {
-  private source?: string | null;
+  private source: string | null;
   private nodes: Node[] = [];
   private currentIndex: number | null = null;
   private previousConditionIndex: number | null = null;
   private label: string;
-  private owner?: string;
+  private owner: string | null = null;
   private affiliates: Affiliate[] = [];
 
   constructor(label: string, source?: string | null) {
     this.label = label;
-    this.source = source;
+    this.source = source || null;
   }
 
   static from(strategy: StrategyConfig) {
-    const builder = new StrategyBuilder("", "");
+    const builder = new StrategyBuilder("", null);
 
     builder.nodes = strategy.nodes.map((n) =>
       "action" in n ? n.action : n.condition
