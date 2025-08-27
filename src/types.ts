@@ -5,14 +5,14 @@ export type Index = number;
 export type ActionNode = {
   index: Index;
   action: Action;
-  next?: Index;
+  next?: Index | null;
 };
 
 export type ConditionNode = {
   index: Index;
   condition: Condition;
-  on_success?: Index;
-  on_failure?: Index;
+  on_success?: Index | null;
+  on_failure?: Index | null;
 };
 
 export type Node = ActionNode | ConditionNode;

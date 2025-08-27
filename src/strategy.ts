@@ -1,4 +1,11 @@
-import type { Action, Condition } from "../calc";
+import type {
+  Action,
+  Affiliate,
+  Cadence,
+  Condition,
+  ManagerExecuteMsg,
+  StrategyConfig,
+} from "../calc";
 import { Config, Environment } from "./fixtures";
 import {
   isAction,
@@ -14,43 +21,26 @@ type Config = {
   schedulerAddress: string;
 };
 
-export type StrategyActionNode = {
-  action: ActionNode;
-};
-
-export type StrategyConditionNode = {
-  condition: ConditionNode;
-};
-
-export type StrategyNode = StrategyActionNode | StrategyConditionNode;
-
-export type Strategy = {
-  nodes: StrategyNode[];
-  label: string;
-  owner?: string;
-  source?: string;
-};
-
 export class StrategyBuilder {
-  private source?: string;
+  private source?: string | null;
   private nodes: Node[] = [];
   private currentIndex: number | null = null;
   private previousConditionIndex: number | null = null;
   private label: string;
   private owner?: string;
+  private affiliates: Affiliate[] = [];
 
-  constructor(label: string, source?: string) {
+  constructor(label: string, source?: string | null) {
     this.label = label;
     this.source = source;
   }
 
-  static from(strategy: Strategy) {
-    const builder = new StrategyBuilder(strategy.label, strategy.source);
+  static from(strategy: StrategyConfig) {
+    const builder = new StrategyBuilder("", "");
 
     builder.nodes = strategy.nodes.map((n) =>
       "action" in n ? n.action : n.condition
     );
-
     builder.owner = strategy.owner;
 
     return builder;
@@ -60,7 +50,17 @@ export class StrategyBuilder {
     return new StrategyBuilder(label, source);
   }
 
-  when(condition: Condition): this {
+  every(cadence: Cadence): this {
+    let condition = {
+      schedule: {
+        executors: [],
+        execution_rebate: [],
+        manager_address: "",
+        scheduler_address: "",
+        cadence,
+      },
+    };
+
     if (!isSchedule(condition)) {
       throw new Error(
         "when(...) requires a schedule condition (e.g., CONDITION.schedule({...}))"
@@ -76,15 +76,9 @@ export class StrategyBuilder {
     return this;
   }
 
-  if(condition: Omit<Condition, "schedule">): this {
+  if(condition: Condition): this {
     if (!isCondition(condition)) {
       throw new Error("if(...) requires a condition object");
-    }
-
-    if (isSchedule(condition)) {
-      throw new Error(
-        "if(...) cannot be used with schedule; use when(...) instead"
-      );
     }
 
     if (this.currentIndex !== null) {
@@ -222,8 +216,9 @@ export class StrategyBuilder {
     const adjacency_list: number[][] = Array.from({ length: size }, () => []);
     const in_degrees = new Array<number>(size).fill(0);
 
-    const addEdgeChecked = (from: number, to?: number) => {
-      if (to === undefined) return;
+    const addEdgeChecked = (from: number, to?: number | null) => {
+      if (to === undefined || to === null) return;
+
       if (to < 0 || to >= size) {
         throw new Error(`Invalid edge: ${from} -> ${to}`);
       }
@@ -299,38 +294,46 @@ export class StrategyBuilder {
     }
   }
 
-  build(config?: Config): Strategy {
+  build(config?: Config): Extract<ManagerExecuteMsg, { instantiate: any }> {
     this.validate();
 
     const { managerAddress, schedulerAddress } =
       config ?? Config[Environment.THORCHAIN_MAINNET];
 
     return {
-      nodes: this.nodes.map((node, index) => {
-        if ("action" in node) {
-          return {
-            action: { ...node, index },
-          };
-        } else {
-          const condition = { ...node.condition };
+      instantiate: {
+        nodes: this.nodes.map((node, index) => {
+          if ("action" in node) {
+            return {
+              action: { ...node, index },
+            };
+          } else {
+            const condition = { ...node.condition };
 
-          if ("schedule" in condition) {
-            condition.schedule.manager_address = managerAddress;
-            condition.schedule.scheduler_address = schedulerAddress;
+            if ("schedule" in condition) {
+              if (!condition.schedule.manager_address) {
+                condition.schedule.manager_address = managerAddress;
+              }
+
+              if (!condition.schedule.scheduler_address) {
+                condition.schedule.scheduler_address = schedulerAddress;
+              }
+            }
+
+            return {
+              condition: {
+                ...node,
+                condition,
+                index,
+              },
+            };
           }
-
-          return {
-            condition: {
-              ...node,
-              condition,
-              index,
-            },
-          };
-        }
-      }),
-      label: this.label,
-      owner: this.owner,
-      source: this.source,
+        }),
+        label: this.label,
+        owner: this.owner,
+        source: this.source,
+        affiliates: this.affiliates,
+      },
     };
   }
 }
