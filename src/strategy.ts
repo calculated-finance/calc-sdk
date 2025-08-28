@@ -338,6 +338,6 @@ export class StrategyBuilder {
   }
 }
 
-export function strategy(label: string) {
-  return StrategyBuilder.create(label);
+export function strategy(label: string, source?: string) {
+  return StrategyBuilder.create(label, source);
 }
