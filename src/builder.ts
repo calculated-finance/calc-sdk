@@ -2,6 +2,7 @@ import type {
   Action,
   Affiliate,
   Cadence,
+  Coin,
   Condition,
   ManagerExecuteMsg,
   StrategyConfig,
@@ -50,11 +51,15 @@ export class StrategyBuilder {
     return new StrategyBuilder(label, source);
   }
 
-  every(cadence: Cadence): this {
+  every(cadence: Cadence, rebate: Coin[]): this {
+    if (rebate.length === 0) {
+      throw new Error("every(...) requires at least one rebate coin");
+    }
+
     let condition = {
       schedule: {
         executors: [],
-        execution_rebate: [],
+        execution_rebate: rebate,
         manager_address: "",
         scheduler_address: "",
         cadence,

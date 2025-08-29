@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { Node } from "../calc";
 import { actions } from "../src/actions";
+import { strategy, StrategyBuilder } from "../src/builder";
 import { conditions } from "../src/conditions";
 import { schedules } from "../src/schedules";
-import { strategy, StrategyBuilder } from "../src/strategy";
 
 const C = (
   index: number,
@@ -99,7 +99,7 @@ describe("StrategyBuilder", () => {
     const {
       instantiate: { nodes },
     } = strategy("DCA")
-      .every(schedules.blocks(2131))
+      .every(schedules.blocks(2131), [{ amount: "1", denom: "rune" }])
       .then(
         actions.swap({
           swap_amount: {
@@ -174,7 +174,7 @@ describe("StrategyBuilder", () => {
   test("then requires action or condition shape", () => {
     expect(() =>
       strategy("Invalid-then")
-        .every(schedules.blocks(2131))
+        .every(schedules.blocks(2131), [{ amount: "1", denom: "rune" }])
         .then({ not_a_valid_key: true } as any)
     ).toThrow();
   });
