@@ -131,6 +131,7 @@ export type StrategyConfig = {
   label: string;
   owner?: string;
   affiliates?: Affiliate[];
+  source?: string;
 };
 
 export const Build = (
@@ -145,6 +146,7 @@ export const Build = (
       owner: config.owner,
       affiliates: config.affiliates || [],
       nodes,
+      source: config.source,
     },
   };
 };
