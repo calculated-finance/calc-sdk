@@ -1,6 +1,5 @@
 import type {
   Addr,
-  Coin,
   Condition,
   PriceSource,
   Schedule,
@@ -35,11 +34,14 @@ export const conditions = {
     return { blocks_completed: n };
   },
 
-  balanceAvailable(input: { address?: Addr | null; amount: Coin }): Condition {
+  balanceAvailable(amount: bigint, asset: string, address?: string): Condition {
     return {
       balance_available: {
-        address: input.address ?? null,
-        amount: input.amount,
+        address,
+        amount: {
+          amount: amount.toString(),
+          denom: asset,
+        },
       },
     };
   },
