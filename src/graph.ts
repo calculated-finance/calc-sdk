@@ -125,133 +125,6 @@ const traverse = (
   throw new Error("Unknown node type");
 };
 
-// const unique = (nodes: Node[]) => {
-//   let workingNodes = [...nodes];
-
-//   for (const node of nodes.reverse()) {
-//     let duplicates = [];
-//     let parents = [];
-
-//     const nodeIsAction = "action" in node;
-
-//     nodes.forEach((other, index) => {
-//       const otherIsAction = "action" in other;
-
-//       if (other === node || nodeIsAction !== otherIsAction) {
-//         return;
-//       }
-
-//       if (nodeIsAction && otherIsAction && node.action !== other.action) {
-//         return;
-//       }
-
-//       if (
-//         !nodeIsAction &&
-//         !otherIsAction &&
-//         node.condition !== other.condition
-//       ) {
-//         return;
-//       }
-
-//       duplicates.push(index);
-//     });
-//   }
-// };
-
-const unique = (nodes: Node[]): Node[] => {
-  if (nodes.length === 0) return nodes;
-
-  const lastIndexByAction = new Map<any, number>();
-  const lastIndexByCondition = new Map<any, number>();
-
-  for (let i = 0; i < nodes.length; i++) {
-    const n = nodes[i]!;
-    if ("action" in n) {
-      lastIndexByAction.set(n.action.action, i);
-    } else {
-      lastIndexByCondition.set(n.condition.condition, i);
-    }
-  }
-
-  const repOf: number[] = new Array(nodes.length);
-  for (let i = 0; i < nodes.length; i++) {
-    const n = nodes[i]!;
-    if ("action" in n) {
-      repOf[i] = lastIndexByAction.get(n.action.action)!;
-    } else {
-      repOf[i] = lastIndexByCondition.get(n.condition.condition)!;
-    }
-  }
-
-  const keptOldIndices = [];
-  for (let i = 0; i < nodes.length; i++) {
-    if (repOf[i] === i) keptOldIndices.push(i);
-  }
-
-  const newIndexOfOld: number[] = new Array(nodes.length).fill(-1);
-  keptOldIndices.forEach((oldIdx, newIdx) => {
-    newIndexOfOld[oldIdx] = newIdx;
-  });
-
-  const result: Node[] = keptOldIndices.map((oldIdx, newIdx) => {
-    const n = nodes[oldIdx]!;
-
-    if ("action" in n) {
-      const oldNext = n.action.next;
-
-      const replaceNext =
-        oldNext === null || oldNext === undefined ? null : repOf[oldNext];
-
-      const newNext =
-        replaceNext === null || replaceNext === undefined
-          ? null
-          : newIndexOfOld[replaceNext];
-
-      return {
-        action: {
-          action: n.action.action,
-          index: newIdx,
-          next: newNext,
-        },
-      };
-    } else {
-      const oldOnSuccess = n.condition.on_success;
-      const oldOnFailure = n.condition.on_failure;
-
-      const replaceOnSuccess =
-        oldOnSuccess === null || oldOnSuccess === undefined
-          ? null
-          : repOf[oldOnSuccess];
-
-      const replaceOnFailure =
-        oldOnFailure === null || oldOnFailure === undefined
-          ? null
-          : repOf[oldOnFailure];
-
-      const newOnSuccess =
-        replaceOnSuccess === null || replaceOnSuccess === undefined
-          ? null
-          : newIndexOfOld[replaceOnSuccess];
-
-      const newOnFailure =
-        replaceOnFailure === null || replaceOnFailure === undefined
-          ? null
-          : newIndexOfOld[replaceOnFailure];
-
-      return {
-        condition: {
-          index: newIdx,
-          condition: n.condition.condition,
-          on_success: newOnSuccess,
-          on_failure: newOnFailure,
-        },
-      };
-    }
-  });
-
-  return result;
-};
-
 export type StrategyConfig = {
   managerAddress: string;
   schedulerAddress: string;
@@ -265,7 +138,7 @@ export const Build = (
   rootNode: BaseNode,
   config: StrategyConfig
 ): Extract<ManagerExecuteMsg, { instantiate: any }> => {
-  const nodes = unique(traverse(0, rootNode, config));
+  const nodes = traverse(0, rootNode, config);
 
   return {
     instantiate: {
