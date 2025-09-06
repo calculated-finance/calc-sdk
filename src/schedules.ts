@@ -5,7 +5,7 @@ export const schedules = {
     return {
       schedule: {
         cadence: {
-          blocks: { interval: Math.floor(Number(interval)), ...options },
+          blocks: { interval: Math.floor(Number(interval)) },
         },
         execution_rebate: [],
         executors: [],
