@@ -57,6 +57,16 @@ export class ConditionNode extends BaseNode {
 
 export const If = (condition: Condition) => new ConditionNode(condition);
 
+export const Not = (node: ConditionNode): ConditionNode => {
+  const newNode = new ConditionNode(node.condition);
+
+  newNode.onSuccess = node.onFailure;
+  newNode.onFailure = node.onSuccess;
+  newNode.parent = node.parent;
+
+  return newNode;
+};
+
 export const Every = (schedule: Condition, then: BaseNode) =>
   new ConditionNode(schedule).Then(then);
 
